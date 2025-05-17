@@ -101,3 +101,23 @@ def remove_md_images(input_path: str, output_directory: str) -> None:
                 if file.endswith(".md"):
                     source = os.path.join(root, file)
                     remove_images_from_md_file(source, output_directory)
+
+def flatten_directory(input_path: str, output_directory: str) -> None:
+    # Copy all nested files to a single output directory
+    # Ex. [input_path]/dir/file.text -> [output_directory]/dir_file.text
+    assert os.path.exists(input_path), f"Directory {input_path} does not exist."
+
+    # Create output directory if it doesn't exist
+    if not os.path.exists(output_directory):
+        os.makedirs(output_directory)
+
+    # Copy all files from the input directory to the output directory
+    for root, _, files in os.walk(input_path):
+        for file in files:
+            source_path = os.path.join(root, file)
+            source_relative_path = os.path.relpath(source_path, input_path)
+
+            destination_file_name = source_relative_path.replace(os.path.sep, "_")
+            destination_path = os.path.join(output_directory, destination_file_name)
+
+            shutil.copy2(source_path, destination_path)
