@@ -1,2 +1,4 @@
 marker-pdf >=1.2.5
 openai
+imagehash 
+pillow
