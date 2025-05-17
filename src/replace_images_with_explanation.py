@@ -25,7 +25,7 @@ def generate_explanation(image_path):
         ]
     )
 
-    return f"==== Billede ====\n {response.output_text} \n=========\n" 
+    return f"==== Billede ====\n {response.output_text} \n==== =====\n" 
 
 def replace_image_in_markdown(markdown_file, image_explanations_map):
     # Replace images with explanations in the markdown file
