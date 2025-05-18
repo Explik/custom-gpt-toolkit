@@ -15,6 +15,35 @@ def run_cli_command(command):
 
     return process.wait()
 
+def get_files_of_type(input_path: str, file_types: list) -> list:
+    """
+    Returns a list of files of the specified types in the given directory.
+    """
+    assert os.path.exists(input_path), f"Directory {input_path} does not exist."
+    
+    files = []
+    for root, _, filenames in os.walk(input_path):
+        for filename in filenames:
+            if any(filename.endswith(ext) for ext in file_types):
+                files.append(os.path.join(root, filename))
+    return files
+
+def get_markdown_workspaces(input_path: str) -> list:
+    md_files = get_files_of_type(input_path, ['.md'])
+
+    folder_infos = []
+    for md_file in md_files:
+        folder = os.path.dirname(md_file)
+        image_files = get_files_of_type(folder, ['.jpg', '.jpeg'])
+
+        folder_infos.append({
+            "directory": folder,
+            "markdown_file": md_file,
+            "image_files": image_files
+        })
+
+    return folder_infos
+
 def convert_pdf_to_md(input_path: str, output_path: str) -> None:
     assert os.path.exists(input_path), f"File {input_path} does not exist."
 
@@ -67,40 +96,6 @@ def extract_md(input_path: str, output_directory: str) -> None:
                 destination = os.path.join(output_directory, file)
                 shutil.copy2(source, destination)
                 print(f"Copied {source} to {destination}")
-
-def remove_images(markdown_text):
-    return re.sub(r'!\[.*?\]\(.*?\)', '', markdown_text)  
-
-def remove_images_from_md_file(input_path: str, output_directory: str) -> None:
-    destination = os.path.join(output_directory, os.path.basename(input_path))
-    with open(input_path, 'r', encoding='utf-8') as f:
-        content = f.read()
-    content = remove_images(content)
-    with open(destination, 'w', encoding='utf-8') as f:
-        f.write(content)
-
-def remove_md_images(input_path: str, output_directory: str) -> None:
-    """
-    Removes all images from markdown files in the input directory and saves them to the output directory.
-    """
-
-    assert os.path.exists(input_path), f"File/directory {input_path} does not exist."
-
-    # Create output directory if it doesn't exist
-    if not os.path.exists(output_directory):
-        os.makedirs(output_directory)
-
-    # If input_path is a file, process it directly
-    if os.path.isfile(input_path):
-        if input_path.endswith(".md"):
-            remove_images_from_md_file(input_path, output_directory)
-    # If input_path is a directory, process all markdown files within it
-    elif os.path.isdir(input_path):
-        for root, _, files in os.walk(input_path):
-            for file in files:
-                if file.endswith(".md"):
-                    source = os.path.join(root, file)
-                    remove_images_from_md_file(source, output_directory)
 
 def flatten_directory(input_path: str, output_directory: str) -> None:
     # Copy all nested files to a single output directory

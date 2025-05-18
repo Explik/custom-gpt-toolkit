@@ -4,6 +4,8 @@ from dotenv import load_dotenv
 from openai import OpenAI
 import base64
 
+from shared.util import get_markdown_workspaces
+
 def encode_image(image_path):
     with open(image_path, "rb") as image_file:
         return base64.b64encode(image_file.read()).decode("utf-8")
@@ -39,27 +41,16 @@ def replace_image_in_markdown(markdown_file, image_explanations_map):
     with open(markdown_file, 'w', encoding='utf-8') as file:
         file.write(content)
 
-def replace_images_with_explanation(input_path):
+def replace_images_with_explanation(workspace):
     # Find all images files in input_path folder 
-    image_files = []
-    for root, _, files in os.walk(input_path):
-        for file in files:
-            if file.lower().endswith(('.jpg', '.jpeg')):
-                image_files.append(os.path.join(root, file))
-
+    image_files = workspace["image_files"]
     image_explations = {
         image_file: generate_explanation(image_file) for image_file in image_files
     }
 
     # Replace images with explanations in markdown files
-    md_files = []
-    for root, _, files in os.walk(input_path):
-        for file in files:
-            if file.lower().endswith('.md'):
-                md_files.append(os.path.join(root, file))
-
-    for md_file in md_files:
-        replace_image_in_markdown(md_file, image_explations)
+    markdown_file = workspace["markdown_file"]
+    replace_image_in_markdown(markdown_file, image_explations)
 
     # Delete the images
     for image_file in image_files:
@@ -68,14 +59,25 @@ def replace_images_with_explanation(input_path):
 @click.command()
 @click.argument('input_path', type=click.Path(exists=True))
 def replace_images_with_explanation_command(input_path):
+    # Assrt that the input path exists as a directory
+    assert os.path.exists(input_path), f"Directory {input_path} does not exist."
+    assert os.path.isdir(input_path), f"Path {input_path} is not a directory."
+    
+    # Verify env configuration
     load_dotenv()
-
     if os.getenv("OPENAI_API_KEY") is None:
         click.echo("Please set the OPENAI_API_KEY environment variable.")
         return
     
+    # Get/process all markdown workspaces
     click.echo(f"Replacing images with explanations in markdown files in '{input_path}'...")
-    replace_images_with_explanation(input_path)
+    workspaces = get_markdown_workspaces(input_path)
+    for workspace in workspaces:
+        click.echo(f"Processing markdown folder: {workspace['directory']}")
+        replace_images_with_explanation(workspace)
+    if not workspaces:
+        click.echo(f"No markdown files found in '{input_path}'.")
+
     click.echo(f"Replaced images with explanations in markdown files in '{input_path}'.")
 
 if __name__ == "__main__":
